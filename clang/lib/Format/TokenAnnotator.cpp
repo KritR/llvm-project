@@ -2885,6 +2885,13 @@ void TokenAnnotator::calculateFormattingInformation(AnnotatedLine &Line) const {
       if (!Current->MustBreakBefore && InFunctionDecl &&
           Current->is(TT_FunctionDeclarationName)) {
         Current->MustBreakBefore = mustBreakForReturnType(Line);
+        FormatToken *ReturnType = Line.First;
+
+        while (ReturnType != Current) {
+          ReturnType->PartOfReturnType = true;
+          ReturnType = ReturnType->Next;
+          // ReturnType->MustBreakBefore = canBreakBefore(Line, *ReturnType);
+        }
       }
     }
 

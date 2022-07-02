@@ -230,7 +230,8 @@ struct FormatToken {
         MustBreakBefore(false), IsUnterminatedLiteral(false),
         CanBreakBefore(false), ClosesTemplateDeclaration(false),
         StartsBinaryExpression(false), EndsBinaryExpression(false),
-        PartOfMultiVariableDeclStmt(false), ContinuesLineCommentSection(false),
+        PartOfMultiVariableDeclStmt(false), PartOfReturnType(false),
+        ContinuesLineCommentSection(false),
         Finalized(false), ClosesRequiresClause(false), BlockKind(BK_Unknown),
         Decision(FD_Unformatted), PackingKind(PPK_Inconclusive),
         TypeIsFinalized(false), Type(TT_Unknown) {}
@@ -288,6 +289,9 @@ struct FormatToken {
   ///
   /// Only set if \c Type == \c TT_StartOfName.
   unsigned PartOfMultiVariableDeclStmt : 1;
+
+  /// \c true if this token is part of a return type
+  unsigned PartOfReturnType : 1;
 
   /// Does this line comment continue a line comment section?
   ///

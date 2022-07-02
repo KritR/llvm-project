@@ -552,14 +552,20 @@ bool ContinuationIndenter::mustBreak(const LineState &State) {
   // If the return type spans multiple lines, wrap before the function name.
   if (((Current.is(TT_FunctionDeclarationName) &&
         // Don't break before a C# function when no break after return type
-        (!Style.isCSharp() ||
-         Style.AlwaysBreakAfterReturnType != FormatStyle::RTBS_None) &&
+        (!Style.isCSharp() || Style.AlwaysBreakAfterReturnType != FormatStyle::RTBS_None) &&
         // Don't always break between a JavaScript `function` and the function
         // name.
         !Style.isJavaScript()) ||
-       (Current.is(tok::kw_operator) && !Previous.is(tok::coloncolon))) &&
-      !Previous.is(tok::kw_template) && CurrentState.BreakBeforeParameter) {
+       (Current.is(tok::kw_operator) && !Previous.is(tok::coloncolon))
+      ) && !Previous.is(tok::kw_template) && CurrentState.BreakBeforeParameter) {
     return true;
+  }
+
+  if (Current.PartOfReturnType && (Current.NestingLevel == 0)) {
+    if(!Current.isOneOf(tok::l_paren, tok::r_paren, TT_TemplateOpener, TT_TemplateCloser)
+        && !Current.is(tok::coloncolon) && !Previous.is(tok::coloncolon)) {
+      return true;
+    }
   }
 
   // The following could be precomputed as they do not depend on the state.
@@ -1023,7 +1029,7 @@ unsigned ContinuationIndenter::addTokenOnNewLine(LineState &State,
 
   if (PreviousNonComment && PreviousNonComment->is(tok::l_paren)) {
     CurrentState.BreakBeforeClosingParen =
-        Style.AlignAfterOpenBracket == FormatStyle::BAS_BlockIndent;
+        (Style.AlignAfterOpenBracket == FormatStyle::BAS_BlockIndent) || true;
   }
 
   if (CurrentState.AvoidBinPacking) {
@@ -1124,11 +1130,11 @@ unsigned ContinuationIndenter::getNewLineColumn(const LineState &State) {
   if (Current.is(tok::r_paren) && State.Stack.size() > 1 &&
       (!Current.Next ||
        Current.Next->isOneOf(tok::semi, tok::kw_const, tok::l_brace))) {
-    return State.Stack[State.Stack.size() - 2].LastSpace;
+    return State.Stack[State.Stack.size() - 1].LastSpace;
   }
-  if (Style.AlignAfterOpenBracket == FormatStyle::BAS_BlockIndent &&
+  if (((Style.AlignAfterOpenBracket == FormatStyle::BAS_BlockIndent) || (Style.AlignAfterOpenBracket == FormatStyle::BAS_Align)) &&
       Current.is(tok::r_paren) && State.Stack.size() > 1) {
-    return State.Stack[State.Stack.size() - 2].LastSpace;
+    return State.Stack[State.Stack.size() - 1].LastSpace;
   }
   if (NextNonComment->is(TT_TemplateString) && NextNonComment->closesScope())
     return State.Stack[State.Stack.size() - 2].LastSpace;
@@ -1280,6 +1286,11 @@ unsigned ContinuationIndenter::getNewLineColumn(const LineState &State) {
       NextNonComment->isBinaryOperator() && CurrentState.UnindentOperator) {
     return CurrentState.Indent - NextNonComment->Tok.getLength() -
            NextNonComment->SpacesRequiredBefore;
+  }
+  if (PreviousNonComment->PartOfReturnType) {
+    // Ensure that if we're continuing based off a return type,
+    // we should maintain the existing indentation.
+    return CurrentState.Indent;
   }
   if (CurrentState.Indent == State.FirstIndent && PreviousNonComment &&
       !PreviousNonComment->isOneOf(tok::r_brace, TT_CtorInitializerComma)) {
