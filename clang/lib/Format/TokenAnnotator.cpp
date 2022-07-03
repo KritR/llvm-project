@@ -2884,7 +2884,9 @@ void TokenAnnotator::calculateFormattingInformation(AnnotatedLine &Line) const {
           Current->MustBreakBefore || mustBreakBefore(Line, *Current);
       if (!Current->MustBreakBefore && InFunctionDecl &&
           Current->is(TT_FunctionDeclarationName)) {
-        Current->MustBreakBefore = mustBreakForReturnType(Line);
+        if(!Current->is(tok::kw_operator)) {
+          Current->MustBreakBefore = mustBreakForReturnType(Line);
+        }
         FormatToken *ReturnType = Line.First;
 
         while (ReturnType != Current) {

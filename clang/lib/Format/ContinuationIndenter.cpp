@@ -349,7 +349,9 @@ bool ContinuationIndenter::mustBreak(const LineState &State) {
       Current.closesBlockOrBlockTypeList(Style)) {
     return true;
   }
-  if (CurrentState.BreakBeforeClosingParen && Current.is(tok::r_paren))
+  if (CurrentState.BreakBeforeClosingParen && Current.is(tok::r_paren) && (
+      (Current.MatchingParen && Current.MatchingParen->Previous && Current.MatchingParen->Previous->is(TT_FunctionDeclarationName))
+       || Current.Next->is(TT_CtorInitializerColon)))
     return true;
   if (Style.Language == FormatStyle::LK_ObjC &&
       Style.ObjCBreakBeforeNestedBlockParam &&
